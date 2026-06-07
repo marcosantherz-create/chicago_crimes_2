@@ -90,8 +90,8 @@ def new_model():
 # PARÁMETROS DE LA INTERFAZ
 # =========================================================
 st.sidebar.header("Configuración de Datos")
-bucket_name = st.sidebar.text_input("Bucket de GCS:", "bucket-ml-bd-gusmercado")
-prefix = st.sidebar.text_input("Prefijo/Carpeta:", "chicago_crime/")
+bucket_name = st.sidebar.text_input("Bucket de GCS:", "ml_grandesdatos_proyectofinal")
+prefix = st.sidebar.text_input("Prefijo/Carpeta:", "chicago_crime_2/")
 limite = st.sidebar.number_input("Muestras por archivo (Límite):", value=5000, step=500)
 chunksize = st.sidebar.number_input("Tamaño del Chunk de lectura:", value=5000, step=500) 
 
