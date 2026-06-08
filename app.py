@@ -390,9 +390,11 @@ col4.metric("Recall Acumulado", f"{metric_rec.get():.4f}")
 # =========================================================
 # SECCIÓN GRÁFICA DEL HISTORIAL (Evolución en el Tiempo)
 # =========================================================
+import altair as alt
+
 if st.session_state.history and len(st.session_state.processed_files) > 0:
-    
-    # Reconstruimos las listas individuales para el DataFrame a partir de las tuplas guardadas
+
+    # Reconstruimos las listas individuales para el DataFrame
     accuracies_global = [h[0] for h in st.session_state.history]
     precisions_global = [h[1] for h in st.session_state.history]
     recalls_global = [h[2] for h in st.session_state.history]
@@ -401,9 +403,11 @@ if st.session_state.history and len(st.session_state.processed_files) > 0:
     precisions_local = [h[1] for h in st.session_state.history_file]
     recalls_local = [h[2] for h in st.session_state.history_file]
 
-    # Asegurar alineación de índices por seguridad en la UI
-    min_len = min(len(st.session_state.processed_files), len(st.session_state.history))
-    
+    min_len = min(
+        len(st.session_state.processed_files),
+        len(st.session_state.history)
+    )
+
     df_metrics = pd.DataFrame({
         "Lote/Archivo": st.session_state.processed_files[:min_len],
         "Accuracy (Global)": accuracies_global[:min_len],
@@ -418,30 +422,184 @@ if st.session_state.history and len(st.session_state.processed_files) > 0:
     st.subheader("📈 Monitoreo de Aprendizaje Continuo")
 
     tab1, tab2, tab3 = st.tabs([
-        "📊 Métricas Acumuladas (Histórico)", 
-        "⚡ Desempeño por Lote Aislado", 
+        "📊 Métricas Acumuladas (Histórico)",
+        "⚡ Desempeño por Lote Aislado",
         "📋 Tabla de Datos Real"
     ])
-    
+
+    # =====================================================
+    # TAB 1 - MÉTRICAS GLOBALES
+    # =====================================================
     with tab1:
+
         st.markdown("#### Evolución de Métricas Globales Acumuladas")
-        st.line_chart(
-            df_metrics.set_index("Lote/Archivo")[["Accuracy (Global)", "Precision (Global)", "Recall (Global)"]],
-            color=["#2ca02c", "#1f77b4", "#ff7f0e"]
+
+        df_global = df_metrics.melt(
+            id_vars=["Lote/Archivo"],
+            value_vars=[
+                "Accuracy (Global)",
+                "Precision (Global)",
+                "Recall (Global)"
+            ],
+            var_name="Métrica",
+            value_name="Valor"
         )
-        
+
+        chart_global = (
+            alt.Chart(df_global)
+            .mark_line(
+                point={
+                    "filled": True,
+                    "size": 100
+                },
+                strokeWidth=4
+            )
+            .encode(
+                x=alt.X(
+                    "Lote/Archivo:N",
+                    sort=None,
+                    title="Archivo Procesado",
+                    axis=alt.Axis(labelAngle=-90)
+                ),
+                y=alt.Y(
+                    "Valor:Q",
+                    title="Valor",
+                    scale=alt.Scale(domain=[0, 1])
+                ),
+                color=alt.Color(
+                    "Métrica:N",
+                    scale=alt.Scale(
+                        domain=[
+                            "Accuracy (Global)",
+                            "Precision (Global)",
+                            "Recall (Global)"
+                        ],
+                        range=[
+                            "#055a4d",  # Verde UP
+                            "#8c203d",  # Vino UP
+                            "#c8a568"   # Dorado UP
+                        ]
+                    ),
+                    legend=alt.Legend(
+                        orient="bottom",
+                        title=None
+                    )
+                ),
+                tooltip=[
+                    "Lote/Archivo",
+                    "Métrica",
+                    alt.Tooltip("Valor:Q", format=".4f")
+                ]
+            )
+            .properties(
+                height=500
+            )
+            .interactive()
+        )
+
+        st.altair_chart(
+            chart_global,
+            use_container_width=True
+        )
+
+    # =====================================================
+    # TAB 2 - MÉTRICAS POR LOTE
+    # =====================================================
     with tab2:
+
         st.markdown("#### Comportamiento del Modelo en el Lote Actual")
-        st.line_chart(
-            df_metrics.set_index("Lote/Archivo")[["Accuracy (Este Lote)", "Precision (Este Lote)", "Recall (Este Lote)"]],
-            color=["#4ade80", "#60a5fa", "#f87171"]
+
+        df_local = df_metrics.melt(
+            id_vars=["Lote/Archivo"],
+            value_vars=[
+                "Accuracy (Este Lote)",
+                "Precision (Este Lote)",
+                "Recall (Este Lote)"
+            ],
+            var_name="Métrica",
+            value_name="Valor"
         )
-        
+
+        chart_local = (
+            alt.Chart(df_local)
+            .mark_line(
+                point={
+                    "filled": True,
+                    "size": 100
+                },
+                strokeWidth=4
+            )
+            .encode(
+                x=alt.X(
+                    "Lote/Archivo:N",
+                    sort=None,
+                    title="Archivo Procesado",
+                    axis=alt.Axis(labelAngle=-90)
+                ),
+                y=alt.Y(
+                    "Valor:Q",
+                    title="Valor",
+                    scale=alt.Scale(domain=[0, 1])
+                ),
+                color=alt.Color(
+                    "Métrica:N",
+                    scale=alt.Scale(
+                        domain=[
+                            "Accuracy (Este Lote)",
+                            "Precision (Este Lote)",
+                            "Recall (Este Lote)"
+                        ],
+                        range=[
+                            "#055a4d",  # Verde UP
+                            "#8c203d",  # Vino UP
+                            "#c8a568"   # Dorado UP
+                        ]
+                    ),
+                    legend=alt.Legend(
+                        orient="bottom",
+                        title=None
+                    )
+                ),
+                tooltip=[
+                    "Lote/Archivo",
+                    "Métrica",
+                    alt.Tooltip("Valor:Q", format=".4f")
+                ]
+            )
+            .properties(
+                height=500
+            )
+            .interactive()
+        )
+
+        st.altair_chart(
+            chart_local,
+            use_container_width=True
+        )
+
+    # =====================================================
+    # TABLA
+    # =====================================================
     with tab3:
-        st.dataframe(df_metrics, use_container_width=True)
+
+        st.dataframe(
+            df_metrics.style.format({
+                "Accuracy (Global)": "{:.4f}",
+                "Precision (Global)": "{:.4f}",
+                "Recall (Global)": "{:.4f}",
+                "Accuracy (Este Lote)": "{:.4f}",
+                "Precision (Este Lote)": "{:.4f}",
+                "Recall (Este Lote)": "{:.4f}",
+            }),
+            use_container_width=True
+        )
 
 else:
+
     st.markdown("---")
-    st.info("💡 Las gráficas de evolución aparecerán aquí en tiempo real en cuanto proceses el primer archivo CSV.")
+    st.info(
+        "💡 Las gráficas de evolución aparecerán aquí en tiempo real "
+        "en cuanto proceses el primer archivo CSV."
+    )
 
 st.caption("Ecosistema: Cloud Run • River ML • Chicago Crime Dataset Abierto")
